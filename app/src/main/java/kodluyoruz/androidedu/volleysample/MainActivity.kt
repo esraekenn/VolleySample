@@ -10,10 +10,13 @@ import com.android.volley.toolbox.HttpHeaderParser
 import com.android.volley.toolbox.JsonArrayRequest
 import com.android.volley.toolbox.JsonObjectRequest
 import com.android.volley.toolbox.StringRequest
-import com.fasterxml.jackson.databind.ObjectMapper
 import com.google.gson.GsonBuilder
+import com.google.gson.reflect.TypeToken
 import kodluyoruz.androidedu.volleysample.viewmodels.InfoViewModel
 import kodluyoruz.androidedu.volleysample.volley.AppController
+import kotlinx.android.synthetic.main.activity_main.*
+import org.json.JSONArray
+import org.json.JSONObject
 import java.io.UnsupportedEncodingException
 import java.nio.charset.Charset
 import java.util.*
@@ -63,7 +66,7 @@ class MainActivity : AppCompatActivity() {
 
         val jsonObjReq = JsonObjectRequest(Request.Method.GET,
                 url, null,
-                Response.Listener { response ->
+                Response.Listener { response: JSONObject ->
                     Log.e("Json Object : ", response.toString())
                     pDialog.hide()
                 }, Response.ErrorListener { error ->
@@ -87,11 +90,13 @@ class MainActivity : AppCompatActivity() {
         pDialog.setMessage("Loading...")
         pDialog.show()
 
-        val req = JsonArrayRequest(url,
-                Response.Listener { response ->
-                    Log.e("Json Array : ", response.toString())
-                    pDialog.hide()
-                }, Response.ErrorListener { error ->
+        val req = JsonArrayRequest(Request.Method.GET, url, null, Response.Listener { response: JSONArray ->
+            Log.e("Json Array : ", response.toString())
+
+            (response[1] as JSONObject).getInt("age")
+
+            pDialog.hide()
+        }, Response.ErrorListener { error ->
             VolleyLog.e(TAG, "Error: " + error.message)
             pDialog.hide()
         })
@@ -114,42 +119,46 @@ class MainActivity : AppCompatActivity() {
         pDialog.show()
 
         val strReq = object : StringRequest(Request.Method.GET,
-                url, Response.Listener { response ->
+                url2, Response.Listener { response: String ->
             /*
                  * Gson Samples
                  * */
-            val gsonBuilder = GsonBuilder()
-            val gson = gsonBuilder.create()
+            val gson = GsonBuilder().create()
 
-            //object request cast islemi icin. // url
-            val post = gson.fromJson<InfoViewModel>(response, InfoViewModel::class.java)
-            Toast.makeText(this@MainActivity, post.name, Toast.LENGTH_SHORT).show()
+            try {
+                //object request cast islemi icin. // url
+                val infoViewModel: InfoViewModel = gson.fromJson<InfoViewModel>(response, InfoViewModel::class.java)
+                Toast.makeText(this@MainActivity, infoViewModel.name, Toast.LENGTH_SHORT).show()
+                txtUserName.text = infoViewModel.name
+            } catch (e: Exception) {
 
-            //array request cast islemi icin. // url2
-            //List<InfoViewModel> posts = Arrays.asList(gson.fromJson(response, InfoViewModel[].class));
-            //Toast.makeText(MainActivity.this, posts.get(0).getName(), Toast.LENGTH_SHORT).show();
+////            //array request cast islemi icin. // url2
+                val postsArray: ArrayList<InfoViewModel> = gson.fromJson(response, object : TypeToken<ArrayList<InfoViewModel>>() {}.type)
+                Toast.makeText(this@MainActivity, postsArray[0].name, Toast.LENGTH_SHORT).show();
+                txtUserName.text = postsArray[0].name
+            }
 
+//
+//            /*
+//                 * Jackson Samples
+//                 * */
+//
+//            val mapper = ObjectMapper()
+//
+//            try {
+//                //object request cast islemi icin. // url
+//                val jackson: InfoViewModelJackson = mapper.readValue(response, InfoViewModelJackson::class.java)
+//                Toast.makeText(this@MainActivity, jackson.name, Toast.LENGTH_SHORT).show()
+//
+//                // array request cast islemi icin. // url2
+//                val jacksonArray: ArrayList<InfoViewModelJackson> = mapper.readValue(response, Arrays.asList(InfoViewModelJackson::class.java))
+//                Toast.makeText(this@MainActivity, jacksonArray[0].name, Toast.LENGTH_SHORT).show()
+//
+//            } catch (e: IOException) {
+//                e.printStackTrace()
+//            }
 
-            /*
-                 * Jackson Samples
-                 * */
-
-            val mapper = ObjectMapper()
-
-            //                try {
-            //                    //object request cast islemi icin. // url
-            ////                    InfoViewModelJackson jackson = mapper.readValue(response.toString(), InfoViewModelJackson.class);
-            ////                    Toast.makeText(MainActivity.this, jackson.getName(), Toast.LENGTH_SHORT).show();
-            //
-            //                    //array request cast islemi icin. // url2
-            ////                    List<InfoViewModelJackson> jackson = Arrays.asList(mapper.readValue(response.toString(), InfoViewModelJackson[].class));
-            ////                    Toast.makeText(MainActivity.this, jackson.get(0).getName(), Toast.LENGTH_SHORT).show();
-            //
-            //                } catch (IOException e) {
-            //                    e.printStackTrace();
-            //                }
-
-            Log.e("Json String : ", response.toString())
+            Log.e("Json String : ", response)
             pDialog.hide()
         }, Response.ErrorListener { error ->
             VolleyLog.e(TAG, "Error: " + error.message)
@@ -157,8 +166,7 @@ class MainActivity : AppCompatActivity() {
         }) {
 
             //encoding ayarlamak icin yazilmali. Silip deneyelim bir de.
-            override fun parseNetworkResponse(
-                    response: NetworkResponse): Response<String> {
+            override fun parseNetworkResponse(response: NetworkResponse): Response<String> {
 
                 val parsed = try {
                     String(response.data, Charset.forName("UTF-8"))
@@ -205,7 +213,6 @@ class MainActivity : AppCompatActivity() {
 
                 return params
             }
-
         }
 
         // requesti kuyruga ekler.
@@ -243,7 +250,6 @@ class MainActivity : AppCompatActivity() {
                 headers["apiKey"] = "xxxxxxxxxxxxxxx"
                 return headers
             }
-
         }
 
         // requesti kuyruga ekler.
@@ -263,7 +269,6 @@ class MainActivity : AppCompatActivity() {
             override fun getPriority(): Request.Priority {
                 return priority
             }
-
         }
     }
 }
