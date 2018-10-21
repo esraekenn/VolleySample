@@ -10,6 +10,7 @@ import com.android.volley.toolbox.HttpHeaderParser
 import com.android.volley.toolbox.JsonArrayRequest
 import com.android.volley.toolbox.JsonObjectRequest
 import com.android.volley.toolbox.StringRequest
+import com.fasterxml.jackson.databind.ObjectMapper
 import com.google.gson.GsonBuilder
 import com.google.gson.reflect.TypeToken
 import kodluyoruz.androidedu.volleysample.viewmodels.InfoViewModel
@@ -58,7 +59,7 @@ class MainActivity : AppCompatActivity() {
         val tag_json_obj = "AndroidBootCampJsonObjectRequest"
 
         //adsoyad, yas ve email bilgisi icerir.
-        val url = "https://api.myjson.com/bins/x8yrj"
+        val url = "http://api.sonraneoldu.com/v2/tags/1/stories"
 
         val pDialog = ProgressDialog(this)
         pDialog.setMessage("Loading...")
@@ -68,6 +69,9 @@ class MainActivity : AppCompatActivity() {
                 url, null,
                 Response.Listener { response: JSONObject ->
                     Log.e("Json Object : ", response.toString())
+
+                    val prominentResponse = ObjectMapper().readValue<ProminentResponse>(response.toString(), ProminentResponse::class.java)
+
                     pDialog.hide()
                 }, Response.ErrorListener { error ->
             VolleyLog.e(TAG, "Error: " + error.message)
